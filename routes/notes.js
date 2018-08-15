@@ -15,7 +15,7 @@ router.get('/', (req, res, next) => {
 
   if (searchTerm) {
     let arr = [];
-    arr.push( { title: { $regex: searchTerm } } );
+    arr.push( { title: { $regex: searchTerm, $options: 'i'} } );
     arr.push( { content: { $regex: searchTerm } } );
     filter = { $or: arr};
   } 
@@ -76,7 +76,8 @@ router.delete('/:id', (req, res, next) => {
   return Note.findByIdAndRemove(id)
     .then(() => {
       res.status(204).end();
-    });
+    })
+    .catch(err => res.status(500).json({ message: "Internal server error" }));
 });
 
 module.exports = router;
