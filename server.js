@@ -60,7 +60,6 @@ if (process.env.NODE_ENV !== 'test') {
     .then(() => {
       app.listen(PORT, function () {
         console.info(`Server listening on ${this.address().port}`);
-        console.log(process.env);
       }).on('error', err => {
         console.error(err);
       });
