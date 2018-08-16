@@ -4,6 +4,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 
 const Folder = require('../models/folder');
+const Note = require('../models/note');
 
 const router = express.Router();
 
@@ -70,7 +71,7 @@ router.post('/', (req, res, next) => {
     })
     .catch(err => {
       if (err.code === 11000) {
-        err = new Error('The folder name already exists');
+        err = new Error('Folder name already exists');
         err.status = 400;
       }
       next(err);
@@ -89,7 +90,7 @@ router.put('/:id', (req, res, next) => {
   }
 
   if (!name) {
-    const err = new Error('Missing `title` in request body');
+    const err = new Error('Missing `name` in request body');
     err.status = 400;
     return next(err);
   }
@@ -106,7 +107,7 @@ router.put('/:id', (req, res, next) => {
     })
     .catch(err => {
       if (err.code === 11000) {
-        err = new Error('The folder name already exists');
+        err = new Error('Folder name already exists');
         err.status = 400;
       }
       next(err);
@@ -124,7 +125,17 @@ router.delete('/:id', (req, res, next) => {
     return next(err);
   }
 
-  Folder.findByIdAndRemove(id)
+  // ON DELETE SET NULL equivalent
+  const folderRemovePromise = Folder.findByIdAndRemove( id );
+  // ON DELETE CASCADE equivalent
+  // const noteRemovePromise = Note.deleteMany({ folderId: id });
+ 
+  const noteRemovePromise = Note.updateMany(
+    { folderId: id },
+    { $unset: { folderId: '' } }
+  );
+ 
+  Promise.all([folderRemovePromise, noteRemovePromise])
     .then(() => {
       res.status(204).end();
     })
