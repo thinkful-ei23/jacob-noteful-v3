@@ -74,7 +74,7 @@ describe('Noteful API Testing',() => {
           expect(res).to.have.status(200);
           expect(res).to.be.json;
           expect(res.body).to.be.an('object');
-          expect(res.body).to.have.keys('id', 'title', 'content', 'createdAt', 'updatedAt' );
+          expect(res.body).to.have.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt' );
 
           expect(res.body.id).to.equal(data.id);
           expect(res.body.title).to.equal(data.title);
