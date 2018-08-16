@@ -56,13 +56,15 @@ if (process.env.NODE_ENV !== 'test') {
       console.error(`ERROR: ${err.message}`);
       console.error('\n === Did you remember to start `mongod`? === \n');
       console.error(err);
+    })
+    .then(() => {
+      app.listen(PORT, function () {
+        console.info(`Server listening on ${this.address().port}`);
+        console.log(process.env);
+      }).on('error', err => {
+        console.error(err);
+      });
     });
-
-  app.listen(PORT, function () {
-    console.info(`Server listening on ${this.address().port}`);
-  }).on('error', err => {
-    console.error(err);
-  });
 }
 
 module.exports = app; // Export for testing
