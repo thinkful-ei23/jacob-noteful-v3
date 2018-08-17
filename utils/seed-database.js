@@ -6,20 +6,11 @@ const { MONGODB_URI } = require('../config');
 
 const Folder = require('../models/folder');
 const Note = require('../models/note');
+const Tag = require('../models/tag');
 
-const seedFolders = require('../db/seed/folders')
+const seedFolders = require('../db/seed/folders');
 const seedNotes = require('../db/seed/notes');
-
-// mongoose.connect(MONGODB_URI)
-//   .then(() => mongoose.connection.db.dropDatabase())
-//   .then(() => Note.insertMany(seedNotes))
-//   .then(results => {
-//     console.info(`Inserted ${results.length} Notes`);
-//   })
-//   .then(() => mongoose.disconnect())
-//   .catch(err => {
-//     console.error(err);
-//   });
+const seedTags = require('../db/seed/tags');
 
 mongoose.connect(MONGODB_URI)
   .then(() => mongoose.connection.db.dropDatabase())
@@ -27,11 +18,13 @@ mongoose.connect(MONGODB_URI)
     return Promise.all([
       Note.insertMany(seedNotes),
       Folder.insertMany(seedFolders),
-      Folder.createIndexes()
+      Tag.insertMany(seedTags),
+      Folder.createIndexes(),
+      Tag.createIndexes()
     ]);
   })
   .then((results) => {
-    console.log(`Inserted ${results[0].length} Notes`,`Inserted ${results[1].length} Folders`);
+    console.log(`Inserted ${results[0].length} Notes`,`Inserted ${results[1].length} Folders`, `Inserted ${results[2].length} Tags`);
   })
   .then(() => mongoose.disconnect())
   .catch(err => {
