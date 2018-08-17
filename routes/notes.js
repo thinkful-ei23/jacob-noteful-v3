@@ -10,7 +10,7 @@ const router = express.Router();
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/', (req, res, next) => {
   const { searchTerm, folderId, tagId, } = req.query;
-  
+  console.log(req.query);
   let filter = {};
 
   if (searchTerm) {
@@ -89,10 +89,7 @@ router.post('/', (req, res, next) => {
         err.status = 400;
         return next(err);
       }
-    } let tagsArray = [];
-    for (let i = 0; i < tags.length; i++) {
-      tagsArray.push(tags[i]);
-    } newNote.tags = tagsArray;
+    } newNote.tags = tags;
   }
   
   Note.create(newNote)
@@ -109,8 +106,7 @@ router.post('/', (req, res, next) => {
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
 router.put('/:id', (req, res, next) => {
   const { id } = req.params;
-  const { title, content, folderId } = req.body;
-
+  const { title, content, folderId, tags } = req.body;
   /***** Never trust users - validate input *****/
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const err = new Error('The `id` is not valid');
@@ -123,14 +119,30 @@ router.put('/:id', (req, res, next) => {
     err.status = 400;
     return next(err);
   }
+  const updateNote = { title, content, };
 
-  if (folderId && !mongoose.Types.ObjectId.isValid(folderId)) {
-    const err = new Error('The `folderId` is not valid');
-    err.status = 400;
-    return next(err);
+  if (folderId)  {
+    if (mongoose.Types.ObjectId.isValid(folderId)) {
+      return updateNote.folderId = folderId;
+    } else {
+      const err = new Error('The `id` is not valid');
+      err.status = 400;
+      return next(err);
+    }
   }
 
-  const updateNote = { title, content, folderId };
+  if (tags) {
+    for (let i = 0; i < tags.length; i++) {
+      if (!mongoose.Types.ObjectId.isValid(tags[i])) {
+        const err = new Error('The `id` is not valid');
+        err.status = 400;
+        return next(err);
+      }
+    } let tagsArray = [];
+    for (let i = 0; i < tags.length; i++) {
+      tagsArray.push(tags[i]);
+    } updateNote.tags = tagsArray;
+  }
 
   Note.findByIdAndUpdate(id, updateNote, { new: true })
     .then(result => {
