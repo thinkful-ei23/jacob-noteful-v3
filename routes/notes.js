@@ -9,22 +9,26 @@ const router = express.Router();
 
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/', (req, res, next) => {
-  const { searchTerm, folderId } = req.query;
-
+  const { searchTerm, folderId, tagId, } = req.query;
+  
   let filter = {};
 
   if (searchTerm) {
     filter.title = { $regex: searchTerm, $options: 'i' };
 
     // Mini-Challenge: Search both `title` and `content`
-    // const re = new RegExp(searchTerm, 'i');
-    // filter.$or = [{ 'title': re }, { 'content': re }];
+    const re = new RegExp(searchTerm, 'i');
+    filter.$or = [{ 'title': re }, { 'content': re }];
   }
   if (folderId) {
     filter.folderId = folderId;
   }
+  if (tagId) {
+    filter.tags = tagId;
+  }
 
   Note.find(filter)
+    .populate('tags')
     .sort({ updatedAt: 'desc' })
     .then(results => {
       res.json(results);
@@ -45,6 +49,7 @@ router.get('/:id', (req, res, next) => {
   }
 
   Note.findById(id)
+    .populate('tags')
     .then(result => {
       if (result) {
         res.json(result);
@@ -59,23 +64,37 @@ router.get('/:id', (req, res, next) => {
 
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/', (req, res, next) => {
-  const { title, content, folderId } = req.body;
-
+  const { title, content, folderId, tags } = req.body;
   /***** Never trust users - validate input *****/
   if (!title) {
     const err = new Error('Missing `title` in request body');
     err.status = 400;
     return next(err);
   }
+  const newNote = { title, content, };
 
-  if (folderId && !mongoose.Types.ObjectId.isValid(folderId)) {
-    const err = new Error('The `id` is not valid');
-    err.status = 400;
-    return next(err);
+  if (folderId)  {
+    if (mongoose.Types.ObjectId.isValid(folderId)) {
+      return newNote.folderId = folderId;
+    } else {
+      const err = new Error('The `id` is not valid');
+      err.status = 400;
+      return next(err);
+    }
   }
-
-  const newNote = { title, content, folderId };
-
+  if (tags) {
+    for (let i = 0; i < tags.length; i++) {
+      if (!mongoose.Types.ObjectId.isValid(tags[i])) {
+        const err = new Error('The `id` is not valid');
+        err.status = 400;
+        return next(err);
+      }
+    } let tagsArray = [];
+    for (let i = 0; i < tags.length; i++) {
+      tagsArray.push(tags[i]);
+    } newNote.tags = tagsArray;
+  }
+  
   Note.create(newNote)
     .then(result => {
       res.location(`${req.originalUrl}/${result.id}`)
