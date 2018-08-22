@@ -111,7 +111,7 @@ router.put('/:id', (req, res, next) => {
 
   const updateFolder = { name: name, userId: userId };
 
-  Folder.find({ _id: id, userId: userId }).update(updateFolder, { new: true })
+  Folder.findOneAndUpdate({ _id: id, userId: userId }, updateFolder, { new: true })
     .then(result => {
       if (result) {
         res.json(result);
@@ -131,7 +131,8 @@ router.put('/:id', (req, res, next) => {
 
 router.delete('/:id', (req, res, next) => {
   const { id } = req.params;
-  
+  const userId = req.user.id;
+
   /***** Never trust users - validate input *****/
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const err = new Error('The `id` is not valid');
@@ -140,7 +141,7 @@ router.delete('/:id', (req, res, next) => {
   }
 
   // ON DELETE SET NULL equivalent
-  const folderRemovePromise = Folder.findByIdAndRemove( id );
+  const folderRemovePromise = Folder.findOneAndRemove( { _id: id, userId: userId });
   // ON DELETE CASCADE equivalent
   // const noteRemovePromise = Note.deleteMany({ folderId: id });
  

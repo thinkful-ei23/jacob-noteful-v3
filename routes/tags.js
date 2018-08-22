@@ -15,8 +15,17 @@ router.use('/', passport.authenticate('jwt', { session: false, failWithError: tr
 
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/', (req, res, next) => {
+  const userId = req.user.id;
+  let filter = {};
 
-  Tag.find()
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    const err = new Error('The `userId` is not valid');
+    err.status = 400;
+    return next(err);
+  }
+  filter.userId = userId;
+
+  Tag.find(filter)
     .sort('name')
     .then(results => {
       res.json(results);
@@ -29,14 +38,19 @@ router.get('/', (req, res, next) => {
 /* ========== GET/READ A SINGLE ITEM ========== */
 router.get('/:id', (req, res, next) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const err = new Error('The `id` is not valid');
     err.status = 400;
     return next(err);
   }
+  let filter = {
+    _id: id,
+    userId: userId
+  };
 
-  Tag.findById(id)
+  Tag.find(filter)
     .then(result => {
       if (result) {
         res.json(result);
@@ -51,9 +65,9 @@ router.get('/:id', (req, res, next) => {
 
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/', (req, res, next) => {
-  const { name } = req.body;
+  const { name, userId } = req.body;
 
-  const newTag = { name };
+  
 
   /***** Never trust users - validate input *****/
   if (!name) {
@@ -61,6 +75,7 @@ router.post('/', (req, res, next) => {
     err.status = 400;
     return next(err);
   }
+  const newTag = { name, userId };
 
   Tag.create(newTag)
     .then(result => {
@@ -79,7 +94,7 @@ router.post('/', (req, res, next) => {
 router.put('/:id', (req, res, next) => {
   const { id } = req.params;
   const { name } = req.body;
-
+  const userId = req.user.id;
   /***** Never trust users - validate input *****/
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const err = new Error('The `id` is not valid');
@@ -95,7 +110,7 @@ router.put('/:id', (req, res, next) => {
 
   const updateTag = { name };
 
-  Tag.findByIdAndUpdate(id, updateTag, { new: true })
+  Tag.findOneAndUpdate({ _id: id, userId: userId }, updateTag, { new: true })
     .then(result => {
       if (result) {
         res.json(result);
@@ -115,6 +130,7 @@ router.put('/:id', (req, res, next) => {
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
 router.delete('/:id', (req, res, next) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
   /***** Never trust users - validate input *****/
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -124,7 +140,7 @@ router.delete('/:id', (req, res, next) => {
   }
 
   // ON DELETE SET NULL equivalent
-  const tagRemovePromise = Tag.findByIdAndRemove( id );
+  const tagRemovePromise = Tag.findOneAndRemove( { _id: id, userId: userId });
   // ON DELETE CASCADE equivalent
   // const noteRemovePromise = Note.deleteMany({ tagId: id });
 
