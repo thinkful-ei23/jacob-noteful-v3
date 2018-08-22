@@ -43,6 +43,7 @@ router.get('/', (req, res, next) => {
 /* ========== GET/READ A SINGLE ITEM ========== */
 router.get('/:id', (req, res, next) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const err = new Error('The `id` is not valid');
@@ -50,7 +51,7 @@ router.get('/:id', (req, res, next) => {
     return next(err);
   }
 
-  Folder.findById(id)
+  Folder.find({ _id: id, userId: userId })
     .then(result => {
       if (result) {
         res.json(result);
@@ -69,12 +70,6 @@ router.post('/', (req, res, next) => {
   /***** Never trust users - validate input *****/
   if (!name) {
     const err = new Error('Missing `name` in request body');
-    err.status = 400;
-    return next(err);
-  }
-
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    const err = new Error('The `userId` is not valid');
     err.status = 400;
     return next(err);
   }
@@ -99,8 +94,9 @@ router.post('/', (req, res, next) => {
 router.put('/:id', (req, res, next) => {
   const { id } = req.params;
   const { name } = req.body;
-
+  const userId = req.user.id;
   /***** Never trust users - validate input *****/
+
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const err = new Error('The `id` is not valid');
     err.status = 400;
@@ -115,7 +111,7 @@ router.put('/:id', (req, res, next) => {
 
   const updateFolder = { name: name };
 
-  Folder.findByIdAndUpdate(id, updateFolder, { new: true })
+  Folder.findByIdAndUpdate( id, updateFolder, { new: true })
     .then(result => {
       if (result) {
         res.json(result);
