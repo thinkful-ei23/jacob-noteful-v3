@@ -16,7 +16,7 @@ router.use('/', passport.authenticate('jwt', { session: false, failWithError: tr
 router.get('/', (req, res, next) => {
   const { searchTerm, folderId, tagId, } = req.query;
   let filter = {};
-
+  filter.userId = req.user.id;
   if (searchTerm) {
     filter.title = { $regex: searchTerm, $options: 'i' };
 
@@ -69,14 +69,15 @@ router.get('/:id', (req, res, next) => {
 
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/', (req, res, next) => {
-  const { title, content, folderId, tags } = req.body;
+  const { title, content, folderId, tags, userId } = req.body;
+  
   /***** Never trust users - validate input *****/
   if (!title) {
     const err = new Error('Missing `title` in request body');
     err.status = 400;
     return next(err);
   }
-  const newNote = { title, content, };
+  const newNote = { title, content, userId };
 
   if (folderId)  {
     if (mongoose.Types.ObjectId.isValid(folderId)) {
@@ -111,7 +112,7 @@ router.post('/', (req, res, next) => {
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
 router.put('/:id', (req, res, next) => {
   const { id } = req.params;
-  const { title, content, folderId, tags } = req.body;
+  const { title, content, folderId, tags, userId } = req.body;
   /***** Never trust users - validate input *****/
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const err = new Error('The `id` is not valid');
@@ -124,7 +125,7 @@ router.put('/:id', (req, res, next) => {
     err.status = 400;
     return next(err);
   }
-  const updateNote = { title, content, };
+  const updateNote = { title, content, userId };
 
   if (folderId)  {
     if (mongoose.Types.ObjectId.isValid(folderId)) {
@@ -165,15 +166,14 @@ router.put('/:id', (req, res, next) => {
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
 router.delete('/:id', (req, res, next) => {
   const { id } = req.params;
-
+  const userId = req.user.id;
   /***** Never trust users - validate input *****/
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const err = new Error('The `id` is not valid');
     err.status = 400;
     return next(err);
   }
-
-  Note.findByIdAndRemove(id)
+  Note.find({ _id: id, userId: userId}).remove()
     .then(() => {
       res.status(204).end();
     })

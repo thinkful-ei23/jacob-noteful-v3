@@ -17,8 +17,15 @@ router.use('/', passport.authenticate('jwt', { session: false, failWithError: tr
 
 router.get('/', (req, res, next) => {
   const { searchTerm } = req.query;
-
+  const userId = req.user.id;
   let filter = {};
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    const err = new Error('The `userId` is not valid');
+    err.status = 400;
+    return next(err);
+  }
+  filter.userId = userId;
 
   if (searchTerm) {
     filter.name = { $regex: searchTerm, $options: 'i' };
@@ -57,7 +64,7 @@ router.get('/:id', (req, res, next) => {
 });
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/', (req, res, next) => {
-  const { name } = req.body;
+  const { name, userId } = req.body;
 
   /***** Never trust users - validate input *****/
   if (!name) {
@@ -66,7 +73,13 @@ router.post('/', (req, res, next) => {
     return next(err);
   }
 
-  const newFolder = { name: name };
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    const err = new Error('The `userId` is not valid');
+    err.status = 400;
+    return next(err);
+  }
+
+  const newFolder = { name: name, userId: userId };
 
   Folder.create(newFolder)
     .then(result => {
