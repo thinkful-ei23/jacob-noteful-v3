@@ -50,7 +50,7 @@ router.get('/:id', (req, res, next) => {
     userId: userId
   };
 
-  Tag.find(filter)
+  Tag.findOne(filter)
     .then(result => {
       if (result) {
         res.json(result);
