@@ -6,8 +6,10 @@ const mongoose = require('mongoose');
 
 const app = require('../server');
 
-const jwt = require('jsonwebtoken');
+
 const { TEST_MONGODB_URI } = require('../config');
+
+const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../config');
 
 const Folder = require('../models/folder');

@@ -7,11 +7,16 @@ const mongoose = require('mongoose');
 const app = require('../server');
 const { TEST_MONGODB_URI } = require('../config');
 
+const jwt = require('jsonwebtoken');
+const { JWT_SECRET } = require('../config');
+
 const Note = require('../models/note');
+const User = require('../models/user');
 const Folder = require('../models/folder');
 const Tag = require('../models/tag');
 
 const seedNotes = require('../db/seed/notes');
+const seedUsers = require('../db/seed/users');
 const seedFolders = require('../db/seed/folders');
 const seedTags = require('../db/seed/tags');
 
@@ -24,18 +29,21 @@ describe('Noteful API - Notes', function () {
     return mongoose.connect(TEST_MONGODB_URI)
       .then(() => mongoose.connection.db.dropDatabase());
   });
+  let token;
+  let user;
 
   beforeEach(function () {
     return Promise.all([
+      User.insertMany(seedUsers),
       Note.insertMany(seedNotes),
       Folder.insertMany(seedFolders),
-      Tag.insertMany(seedTags)
+      Tag.insertMany(seedTags),
+      Folder.createIndexes(),
+      Tag.createIndexes()
     ])
-      .then(() => {
-        return Promise.all([
-          Folder.createIndexes(),
-          Tag.createIndexes()
-        ]);
+      .then(([users]) => {
+        user = users[0];
+        token = jwt.sign({ user }, JWT_SECRET, { subject: user.username });
       });
   });
 
@@ -47,12 +55,14 @@ describe('Noteful API - Notes', function () {
     return mongoose.disconnect();
   });
 
-  describe('GET /api/notes', function () {
+  describe.only('GET /api/notes', function () {
 
     it('should return the correct number of Notes', function () {
       return Promise.all([
-        Note.find(),
-        chai.request(app).get('/api/notes')
+        Note.find({ userId: user.id }),
+        chai.request(app)
+          .get('/api/notes')
+          .set('Authorization', `Bearer ${token}`)
       ])
         .then(([data, res]) => {
           expect(res).to.have.status(200);
