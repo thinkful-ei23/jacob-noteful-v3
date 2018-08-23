@@ -51,7 +51,7 @@ router.get('/:id', (req, res, next) => {
     return next(err);
   }
 
-  Folder.find({ _id: id, userId: userId })
+  Folder.findOne({ _id: id, userId: userId })
     .then(result => {
       if (result) {
         res.json(result);

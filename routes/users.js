@@ -1,5 +1,6 @@
 'use strict';
 
+
 const express = require('express');
 const mongoose = require('mongoose');
 
@@ -14,10 +15,14 @@ router.post('/users', (req, res, next) => {
   const requiredFields = ['username', 'password'];
   const missingField = requiredFields.find(field => !(field in req.body));
 
+
   if (missingField) {
-    const err = new Error(`Missing '${missingField}' in request body`);
-    err.status = 422;
-    return next(err);
+    return res.status(422).json({
+      code: 422,
+      reason: 'ValidationError',
+      message: `Missing '${missingField}' in request body`,
+      location: missingField
+    });
   }
   const stringFields = ['username', 'password', 'fullname'];
   const nonStringField = stringFields.find(
@@ -79,23 +84,33 @@ router.post('/users', (req, res, next) => {
       location: tooSmallField || tooLargeField
     });
   }
-
-  return User.hashPassword(password)
-    .then(digest => {
-      const newUser = {
-        username,
-        password: digest,
-        fullname
-      };
-      return User.create(newUser);
+  return User.find({ username })
+    .count()
+    .then(count => {
+      if (count > 0) {
+        //There is an existing user with same username
+        return Promise.reject({
+          code: 422,
+          reason: 'ValidationError',
+          message: 'Username already taken',
+          location: 'username'
+        });
+      }
+      return User.hashPassword(password);
     })
+    .then(hash => {
+      return User.create({
+        username,
+        password: hash,
+        fullname: fullname.trim()
+      });
+    }) 
     .then(result => {
       return res.status(201).location('/api/users/${result.id}').json(result);
     })
     .catch(err => {
-      if (err.code === 11000) {
-        err = new Error('User name already exists');
-        err.status = 400;
+      if (err.reason === 'ValidationError') {
+        return res.status(err.code).json(err);
       }
       next(err);
     });
